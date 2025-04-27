@@ -165,21 +165,22 @@ class Level:
             with open(pth,"r") as f:
                 lt = LevelToolkit(self)
                 sandbox.execute(f.read())(lt)
-        if self.level_number == 1:
-            if self.sublevel_number == 1:
-                self.platform_group.add(Platform((100, 500), (100, 20),self.game))
-                self.platform_group.add(Platform((200, 450), (100, 20),self.game))
-            elif self.sublevel_number == 2:
-                self.platform_group.add(Platform((300, 350), (150, 20),self.game))
-                self.platform_group.add(Platform((400, 200), (120, 20),self.game))
+        else:
+            if self.level_number == 1:
+                if self.sublevel_number == 1:
+                    self.platform_group.add(Platform((100, 500), (100, 20),self.game))
+                    self.platform_group.add(Platform((200, 450), (100, 20),self.game))
+                elif self.sublevel_number == 2:
+                    self.platform_group.add(Platform((300, 350), (150, 20),self.game))
+                    self.platform_group.add(Platform((400, 200), (120, 20),self.game))
 
-        elif self.level_number == 2:
-            if self.sublevel_number == 1:
-                self.platform_group.add(Platform((100, 400), (100, 20),self.game))
-                self.platform_group.add(Platform((250, 300), (150, 20),self.game))
-            elif self.sublevel_number == 2:
-                self.platform_group.add(Platform((400, 250), (120, 20),self.game))
-                self.platform_group.add(Platform((500, 400), (120, 20),self.game))
+            elif self.level_number == 2:
+                if self.sublevel_number == 1:
+                    self.platform_group.add(Platform((100, 400), (100, 20),self.game))
+                    self.platform_group.add(Platform((250, 300), (150, 20),self.game))
+                elif self.sublevel_number == 2:
+                    self.platform_group.add(Platform((400, 250), (120, 20),self.game))
+                    self.platform_group.add(Platform((500, 400), (120, 20),self.game))
 
     def on_frame(self, player,dt):
         """Define actions or events that happen every frame for this level."""
