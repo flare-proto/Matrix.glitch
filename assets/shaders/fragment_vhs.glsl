@@ -15,7 +15,7 @@ void main()
     vec2 uv = fragmentTexCoord;
     
     // SMALL random horizontal band offset            0.02          V
-    float glitch = (rand(vec2(time * 0.2, uv.y * 30.0)) - 0.5) * 0.005;
+    float glitch = (rand(vec2(time * 0.2, uv.y * 30.0)) - 0.5) * 0.003;
     uv.x += glitch;
 
     // SMALLER RGB Split 0.003

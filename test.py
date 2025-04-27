@@ -1,63 +1,45 @@
-from random import randint
-from time import time
 import pygame
 from pygame_render import RenderEngine
+import math
 
-
-# Initialize pygame
 pygame.init()
+display_size = (800, 600)
 
-# Create a render engine
-width, height = 1280, 720
-engine = RenderEngine(width, height)
+engine = RenderEngine(display_size[0], display_size[1])
+screen = engine.make_layer(display_size)
 
-# Load texture
-tex = engine.load_texture("assets/flare.png")
+hdr_texture = engine.make_layer(display_size, dtype = 'f4')
+hdr_layer = engine.make_layer(display_size, dtype = 'f4')
+engine.HDR_exposure = 0.1
 
-# Clock
-clock = pygame.time.Clock()
+pygame.font.init()
+font = pygame.font.SysFont("Arial", 30)
 
-# Positions
-num_sprites = 1000
-positions = [(randint(0, width), randint(0, height))
-             for _ in range(num_sprites)]
-
-# Load shader
-shader_glow = engine.load_shader_from_path('assets/shaders/vertex.glsl', 'assets/shaders/fragment_vhs.glsl')
-
-# Main game loop
 running = True
-total_time = 0
+time = 0
 while running:
-    # Tick the clock at 60 frames per second
-    clock.tick(60)
-    t0 = time()
-
-    # Clear the screen
-    engine.clear(64, 128, 64)
-
-    # Update the time
-    total_time += clock.get_time()
-
-    # Send time uniform to glow shader
-    shader_glow['time'] = total_time
-
-    # Render texture to screen
-    angle = total_time * 0.05
-    for p in positions:
-        engine.render(tex, engine.screen,
-                      position=p, scale=1., angle=angle, shader=shader_glow)
-
-    # Update the display
-    pygame.display.flip()
-
-    # Display mspt
-    t = time()
-    mspt = (t-t0)*1000
-    pygame.display.set_caption(
-        f'Rendering {num_sprites} sprites at {mspt:.3f} ms per tick!')
-
-    # Process events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+    time += 0.005
+    value = 5 * math.sin(time) + 5#0 - 10
+
+    screen.clear(0, 0, 0, 255)
+    hdr_texture.clear(255 * value, 255, 255, 255)
+
+    engine.render(hdr_texture.texture, hdr_layer)
+    engine.render(hdr_layer.texture, screen, hdr_render=True)
+
+    value_text = f"R value: {255 * value:.2f}"  # Format the value to 2 decimal places
+    text_surface = font.render(value_text, True, (255, 255, 255))  # White text
+    texture = engine.surface_to_texture(text_surface)
+    
+    engine.render(texture, screen)
+    texture.release()
+
+    engine.render(screen.texture, engine.screen)
+
+    pygame.display.flip()
+
+pygame.quit()
