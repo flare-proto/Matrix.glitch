@@ -1,0 +1,27 @@
+#version 330
+in vec2 texCoords;
+out vec4 fragColor;
+
+uniform sampler2D screenTexture;
+uniform float time;
+
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+void main()
+{
+    vec2 uv = texCoords;
+    
+    // SMALL random horizontal band offset            0.02          V
+    float glitch = (rand(vec2(time * 0.2, uv.y * 30.0)) - 0.5) * 0.005;
+    uv.x += glitch;
+
+    // SMALLER RGB Split 0.003
+    float splitAmount = 0.0015;
+    float r = texture(screenTexture, uv + vec2(splitAmount, 0.0)).r;
+    float g = texture(screenTexture, uv).g;
+    float b = texture(screenTexture, uv - vec2(splitAmount, 0.0)).b;
+
+    fragColor = vec4(r, g, b, 1.0);
+}
