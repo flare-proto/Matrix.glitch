@@ -10,7 +10,6 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 import numpy as np
-
 class ShaderPostProcessor:
     DEFAULT_VERTEX_SHADER = """
     #version 330

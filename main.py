@@ -15,10 +15,8 @@ native_res = (800, 600)
 screen = pygame.display.set_mode(screen_res,pygame.DOUBLEBUF|pygame.OPENGL)
 clock = pygame.time.Clock()
 
-with open("assets/shaders/vhs.frag","r") as f:
-    VHS = f.read()
 
-shader = pyshade.ShaderPostProcessor((800,600), fragment_shader_source=VHS)
+
 
 # Colors
 WHITE = (255, 255, 255)
@@ -34,7 +32,16 @@ PLAYER_SPEED = 5
 
 lights_engine = LightingEngine(
     screen_res=screen_res, native_res=native_res, lightmap_res=native_res)
-lights_engine.set_ambient(30, 30, 30, 30)
+lights_engine.set_ambient(0, 0, 0, 0)
+
+engine = lights_engine.graphics
+
+final_layer = engine.make_layer(screen_res)
+
+lights_engine.light_output_target =final_layer
+
+shader_vhs = engine.load_shader_from_path('assets/shaders/vertex.glsl', 'assets/shaders/fragment_vhs.glsl')
+
 
 light = PointLight(position=(0, 0), power=1., radius=250)
 light.set_color(255, 100, 0, 200)
@@ -43,6 +50,14 @@ lights_engine.lights.append(light)
 light2 = PointLight(position=(100, 300), power=1., radius=500)
 light2.set_color(255, 255, 255, 200)
 lights_engine.lights.append(light2)
+
+light3 = PointLight(position=(500, 300), power=2., radius=50)
+light3.set_color(255, 0, 255, 200)
+lights_engine.lights.append(light3)
+
+light4 = PointLight(position=(500, 250), power=2., radius=50)
+light4.set_color(255, 255, 255, 200)
+lights_engine.lights.append(light4)
 
 # Player class
 class Player(pygame.sprite.Sprite):
@@ -106,6 +121,8 @@ running = True
 t = 0
 while running:
     screen.fill(WHITE)
+    engine.clear(0, 0, 0)
+    final_layer.clear(0, 0, 0)
 
     keys = pygame.key.get_pressed()
     for event in pygame.event.get():
@@ -116,10 +133,8 @@ while running:
 
     platform_group.draw(screen)
     player_group.draw(screen)
-
-    surf = shader.render(screen,t)
     
-    tex = lights_engine.surface_to_texture(surf)
+    tex = lights_engine.surface_to_texture(screen)
     
     lights_engine.render_texture(
         tex, pl2d.BACKGROUND,
@@ -127,6 +142,8 @@ while running:
         pygame.Rect(0, 0, tex.width, tex.height))
     tex.release()
     lights_engine.render()
+    shader_vhs['time'] = t
+    engine.render(final_layer.texture, engine.screen, position=(0, 0),scale=1., shader=shader_vhs)
     
     pygame.display.flip()
     t += clock.tick(60)
