@@ -1,9 +1,19 @@
 import pygame
-from pygame_light2d import LightingEngine,PointLight,Hull
+from lupa import LuaRuntime
+from pygame_light2d import Hull, LightingEngine, PointLight
 
-from game import Game
 import luma
+from game import Game
 from util import Point2
+
+sandbox = LuaRuntime(unpack_returned_tuples=True, register_eval=False)
+
+# Remove access to global functions that could be dangerous
+# Inject restricted environment into Lua
+sandbox.globals()["_G"] = None  # Remove global environment access
+sandbox.globals()["os"] = None  # Prevent OS access
+sandbox.globals()["io"] = None  # Prevent file operations
+sandbox.globals()["debug"] = None  # Block debugging functions
 
 # Colors
 GREEN = (50, 255, 50)
