@@ -1,18 +1,16 @@
 from pygame_light2d import LightingEngine, PointLight,Hull
-import pygame.math
-
-
+import pygame.math,abc
 
 class group:
     def __init__(self):
         self._members =set()
     def kill(self):
-        for i in self._members:
+        for i in list(self._members):
             i._rem(self)
             self._members.remove(i)
             i._kill()
     def clear(self):
-        for i in self._members:
+        for i in list(self._members):
             i._rem(self)
             self._members.remove(i)
     def _rem(self,memb):
@@ -23,6 +21,25 @@ class group:
         for i in list(self._members):
             i.update(dt)
 
+class member(abc.ABC):
+    def __init__(self):
+        self._groups:set[group] =set()
+    
+    def kill(self):
+        for g in list(self._groups):
+            g._rem(self)
+            self._groups.remove(g)
+        #self._eng.lights.remove(self)
+    def _rem(self,g:group):
+        self._groups.remove(g)
+    def join(self,g:group):
+        g._join(self)
+        self._groups.add(g)
+        return self
+    def update(self,dt):
+        pass
+    def _kill(self):
+        pass
 class light:
     def __init__(self,engine:LightingEngine,position: tuple[int],power: float=1., radius: float=1):
         self._eng = engine
@@ -36,7 +53,10 @@ class light:
         for g in list(self._groups):
             g._rem(self)
             self._groups.remove(g)
-        #self._eng.lights.remove(self)
+        self._kill()
+    def _kill(self):
+        if self.light in self._eng.lights:
+            self._eng.lights.remove(self.light)
     def _rem(self,g:group):
         self._groups.remove(g)
     def join(self,g:group):
@@ -71,7 +91,8 @@ class hull:
             self._groups.remove(g)
         self._eng.hulls.remove(self)
     def _kill(self):
-        self._eng.hulls.remove(self)
+        if self.hull in self._eng.hulls:
+            self._eng.hulls.remove(self.hull)
     def _rem(self,g:group):
         self._groups.remove(g)
     def join(self,g:group):
@@ -80,3 +101,4 @@ class hull:
         return self
     def update(self,dt):
         pass
+    
