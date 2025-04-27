@@ -1,6 +1,7 @@
 import pygame
 import sys,pyshade
 import pygame_light2d as pl2d
+import pygame_light2d.double_buff
 from pygame_light2d import LightingEngine, PointLight, Hull
 
 # Initialize
@@ -38,6 +39,10 @@ lights_engine.set_ambient(30, 30, 30, 30)
 light = PointLight(position=(0, 0), power=1., radius=250)
 light.set_color(255, 100, 0, 200)
 lights_engine.lights.append(light)
+
+light2 = PointLight(position=(100, 300), power=1., radius=500)
+light2.set_color(255, 255, 255, 200)
+lights_engine.lights.append(light2)
 
 # Player class
 class Player(pygame.sprite.Sprite):
