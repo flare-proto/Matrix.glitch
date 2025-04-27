@@ -1,4 +1,4 @@
-from pygame_light2d import LightingEngine, PointLight
+from pygame_light2d import LightingEngine, PointLight,Hull
 import pygame.math
 
 
@@ -7,6 +7,11 @@ class group:
     def __init__(self):
         self._members =set()
     def kill(self):
+        for i in self._members:
+            i._rem(self)
+            self._members.remove(i)
+            i._kill()
+    def clear(self):
         for i in self._members:
             i._rem(self)
             self._members.remove(i)
@@ -31,6 +36,7 @@ class light:
         for g in list(self._groups):
             g._rem(self)
             self._groups.remove(g)
+        #self._eng.lights.remove(self)
     def _rem(self,g:group):
         self._groups.remove(g)
     def join(self,g:group):
@@ -51,3 +57,26 @@ class decayLight(light):
         self.light.power = pygame.math.remap(0,self.maxTime,0,self.max,self.time_remain)
         if self.time_remain <= 0:
             self.kill()
+            
+class hull:
+    def __init__(self,engine:LightingEngine,verts):
+        self._eng = engine
+        self._groups:set[group] =set()
+        self.hull = Hull(verts)
+        self._eng.hulls.append(self.hull)
+
+    def kill(self):
+        for g in list(self._groups):
+            g._rem(self)
+            self._groups.remove(g)
+        self._eng.hulls.remove(self)
+    def _kill(self):
+        self._eng.hulls.remove(self)
+    def _rem(self,g:group):
+        self._groups.remove(g)
+    def join(self,g:group):
+        g._join(self)
+        self._groups.add(g)
+        return self
+    def update(self,dt):
+        pass
