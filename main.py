@@ -1,151 +1,130 @@
 import pygame
-import flare.scene
-from pygame.locals import *
-from pyshade import ShaderPostProcessor
+import sys,pyshade
+import pygame_light2d as pl2d
+from pygame_light2d import LightingEngine, PointLight, Hull
 
+# Initialize
 pygame.init()
-screen = pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
 
-# VHS Glitch Shader
-with open("assets/shaders/vhs.frag","r") as f:
-    vhs_shader_code = f.read()
+screen_res = (800, 600)
+native_res = (800, 600)
 
-shader = ShaderPostProcessor((800, 600), fragment_shader_source=vhs_shader_code)
 
-logo =  pygame.image.load("assets/flare.png")
 
+screen = pygame.display.set_mode(screen_res,pygame.DOUBLEBUF|pygame.OPENGL)
 clock = pygame.time.Clock()
+
+with open("assets/shaders/vhs.frag","r") as f:
+    VHS = f.read()
+
+shader = pyshade.ShaderPostProcessor((800,600), fragment_shader_source=VHS)
+
+# Colors
+WHITE = (255, 255, 255)
+BLUE = (50, 50, 255)
+GREEN = (50, 255, 50)
+
+# Constants
+GRAVITY = 0.5
+JUMP_STRENGTH = -10
+PLAYER_SPEED = 5
+
+
+
+lights_engine = LightingEngine(
+    screen_res=screen_res, native_res=native_res, lightmap_res=native_res)
+lights_engine.set_ambient(30, 30, 30, 30)
+
+light = PointLight(position=(0, 0), power=1., radius=250)
+light.set_color(255, 100, 0, 200)
+lights_engine.lights.append(light)
+
+# Player class
+class Player(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        super().__init__()
+        self.image = pygame.Surface((40, 60))
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect(topleft=pos)
+        self.vel_y = 0
+        self.on_ground = False
+
+    def update(self, keys):
+        # Movement
+        if keys[pygame.K_LEFT]:
+            self.rect.x -= PLAYER_SPEED
+        if keys[pygame.K_RIGHT]:
+            self.rect.x += PLAYER_SPEED
+
+        if keys[pygame.K_SPACE]:
+            if self.on_ground:
+                self.vel_y = JUMP_STRENGTH
+
+        # Gravity
+        self.vel_y += GRAVITY
+        self.rect.y += self.vel_y
+
+        # Ground Collision
+        self.on_ground = False
+        for platform in platform_group:
+            if self.rect.colliderect(platform.rect) and self.vel_y >= 0:
+                self.rect.bottom = platform.rect.top
+                self.vel_y = 0
+                self.on_ground = True
+        light.position =self.rect.center
+        
+# Platform class
+class Platform(pygame.sprite.Sprite):
+    def __init__(self, pos, size):
+        super().__init__()
+        self.image = pygame.Surface(size)
+        self.image.fill(GREEN)
+        self.rect = self.image.get_rect(topleft=pos)
+        vertices = [self.rect.topleft, self.rect.topright, self.rect.bottomright, self.rect.bottomleft]
+        self.hull = Hull(vertices)
+        lights_engine.hulls.append(self.hull)
+
+# Groups
+player = Player((100, 400))
+player_group = pygame.sprite.Group(player)
+
+platform_group = pygame.sprite.Group()
+# Ground
+platform_group.add(Platform((0, 550), (800, 50)))
+# Floating platforms
+platform_group.add(Platform((200, 450), (100, 20)))
+platform_group.add(Platform((400, 350), (150, 20)))
+platform_group.add(Platform((600, 250), (120, 20)))
+
+# Game loop
 running = True
+t = 0
+while running:
+    screen.fill(WHITE)
 
+    keys = pygame.key.get_pressed()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-scene = pygame.Surface((800, 600))
+    player_group.update(keys)
 
-class MenuScene(flare.scene.Scene):
-    def __init__(self, manager):
-        super().__init__(manager)
-        self.buttons = [
-            flare.scene.Button(flare.scene.SCREEN_WIDTH // 2 - 100, 250, 200, 50, "Start Game", lambda: self.manager.set_scene("game")),
-            flare.scene.Button(flare.scene.SCREEN_WIDTH // 2 - 100, 320, 200, 50, "Settings", lambda: self.manager.set_scene("settings")),
-            flare.scene.Button(flare.scene.SCREEN_WIDTH // 2 - 100, 390, 200, 50, "Quit", lambda: pygame.quit() or exit()),
-            flare.scene.Button(flare.scene.SCREEN_WIDTH // 2 - 100, 450, 200, 50, "DEBUG", lambda: self.manager.set_scene("debug")),
-        ]
+    platform_group.draw(screen)
+    player_group.draw(screen)
 
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            for button in self.buttons:
-                button.check_click(event)
+    surf = shader.render(screen,t)
+    
+    tex = lights_engine.surface_to_texture(surf)
+    
+    lights_engine.render_texture(
+        tex, pl2d.BACKGROUND,
+        pygame.Rect(0, 0, tex.width, tex.height),
+        pygame.Rect(0, 0, tex.width, tex.height))
+    tex.release()
+    lights_engine.render()
+    
+    pygame.display.flip()
+    t += clock.tick(60)
 
-    def render(self, screen):
-        screen.fill(flare.scene.DARK_GRAY)
-        font = pygame.font.Font(None, 48)
-        title_text = font.render("Main Menu", True, flare.scene.WHITE)
-        screen.blit(title_text, (flare.scene.SCREEN_WIDTH // 2 - 80, 150))
-
-        for button in self.buttons:
-            button.draw(screen)
-            
-class SettingsScene(flare.scene.Scene):
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.manager.set_scene("menu")
-
-    def render(self, screen):
-        screen.fill((100, 100, 100))
-        font = pygame.font.Font(None, 36)
-        text = font.render("Settings - Press ESC to return", True, flare.scene.WHITE)
-        screen.blit(text, (flare.scene.SCREEN_WIDTH // 2 - 120, flare.scene.SCREEN_HEIGHT // 2))
-
-class DEBUGScene(flare.scene.Scene):
-    def __init__(self, manager):
-        super().__init__(manager)
-        self.camera_x, self.camera_y = 0, 0
-        self.water_animation_index = 0
-        self.animation_timer = 0
-
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.manager.set_scene("menu")
-
-    def update(self):
-        keys = pygame.key.get_pressed()
-
-    def render(self, scr:pygame.Surface):
-        scr.fill((0, 0, 0))
-        x = 0
-        y = 0
-        for k,a in assets["tex"].items():
-            r:pygame.Rect = a.get_rect()
-            x += r.w
-            if x >= 700:
-                x = 0
-                y += 16
-            scr.blit(a,(x,y))
-
-
-class GameScene(flare.scene.Scene):
-    def __init__(self, manager):
-        super().__init__(manager)
-        self.camera_x, self.camera_y = 0, 0
-        self.water_animation_index = 0
-        self.animation_timer = 0
-        
-        self.cardSel = None
-
-    def handle_events(self, events):
-        for event in events:
-            match event.type:
-                case pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                case pygame.KEYDOWN :
-                    match event.key:
-                        case pygame.K_ESCAPE:
-                            self.manager.set_scene("menu")
-                
-
-    def update(self):
-        keys = pygame.key.get_pressed()
-
-    def render(self, scr:pygame.Surface):
-        scr.fill((15, 15, 15))
-        
-        scene.fill((20, 10, 40))
-        pygame.draw.rect(scene, (255, 255, 255), (200, 200, 400, 200))
-        pygame.draw.line(scene, (255, 0, 0), (0, 0), (800, 600), 5)
-        scene.blit(logo,(250,250))
-
-# Main loop
-def main():
-    t = 0.0
-    manager = flare.scene.SceneManager()
-    manager.add_scene("menu", MenuScene(manager))
-    manager.add_scene("game", GameScene(manager))
-    manager.add_scene("settings", SettingsScene(manager))
-    manager.add_scene("debug", DEBUGScene(manager))
-    manager.set_scene("menu")
-
-    running = True
-    while running:
-        events = pygame.event.get()
-        manager.handle_events(events)
-        manager.update()
-        manager.render(scene)
-
-        pygame.display.flip()
-        shader.render(scene, time=t)
-        dt = clock.tick(60) / 1000
-        t += dt  # advance time
-
-if __name__ == "__main__":
-    main()
+pygame.quit()
+sys.exit()
