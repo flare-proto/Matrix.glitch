@@ -1,4 +1,4 @@
-import pygame
+import pygame,os
 from lupa import LuaRuntime
 from pygame_light2d import Hull, LightingEngine, PointLight
 
@@ -160,6 +160,11 @@ class Level:
 
     def setup_level(self):
         """Set up platforms and objects specific to this level and sublevel."""
+        pth = os.path.join("levels",f"l{self.level_number}_{self.sublevel_number}.lua")
+        if os.path.exists(pth):
+            with open(pth,"r") as f:
+                lt = LevelToolkit(self)
+                sandbox.execute(f.read())(lt)
         if self.level_number == 1:
             if self.sublevel_number == 1:
                 self.platform_group.add(Platform((100, 500), (100, 20),self.game))
@@ -212,3 +217,11 @@ class LevelManager:
         self.level.on_frame(self.level.player,dt)
     def draw(self,scr):
         self.level.draw(scr)
+        
+class LevelToolkit:
+    def __init__(self,level: Level):
+        self.level = level
+    def Point2(self,x,y):
+        return Point2(x,y)
+    def Platform(self, pos, size):
+        self.level.platform_group.add(Platform(pos.xy,size.xy,self.level.game))
