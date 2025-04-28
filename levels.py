@@ -65,9 +65,11 @@ class Player(pygame.sprite.Sprite):
         # Horizontal Movement
         self.vel_x = 0
         if keys[pygame.K_LEFT]:
-            self.vel_x = -PLAYER_SPEED
+            self.vel_x -= PLAYER_SPEED
+            self.vel_y -= 0.1
         if keys[pygame.K_RIGHT]:
-            self.vel_x = PLAYER_SPEED
+            self.vel_x += PLAYER_SPEED
+            self.vel_y -= 0.1
 
         # Apply horizontal movement
         self.rect.x += self.vel_x
@@ -106,6 +108,7 @@ class Player(pygame.sprite.Sprite):
         #    self.jump()  # Call jump function
 
         # Update light position to match player's position
+
         self.lamp.light.position = self.rect.center
 
 class Platform(pygame.sprite.Sprite):
