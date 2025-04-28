@@ -39,17 +39,20 @@ class Player(pygame.sprite.Sprite):
         
         
         self.jumps_left = 1
-        self.jumps = 1
+        self.jumps = 2
         self.jumpCooldown = 0
 
     def jump(self):
         if self.on_ground:
             self.vel_y -= JUMP_STRENGTH
             self.jumps_left = self.jumps
+            t = luma.decayLight(self.game.lights_engine,self.rect.center,1,100,1500)
+            t.set_color(200,50,255,255)
+            t.join(self.game.lights)
         elif self.jumps_left > 0 and self.jumpCooldown <= 0:
-            self.vel_y -= JUMP_STRENGTH * 1.1
+            self.vel_y -= JUMP_STRENGTH * 1.2
             self.jumps_left -= 1
-            self.jumpCooldown += 75
+            self.jumpCooldown += 100
             t = luma.decayLight(self.game.lights_engine,self.rect.center,2,100,1000)
             t.set_color(100,200,255,255)
             t.join(self.game.lights)
@@ -154,9 +157,9 @@ class Level:
         self.player_group = pygame.sprite.GroupSingle()
         self.player = Player((100, 400),self.game)
         self.player_group.add(self.player)
-        self.platform_group.add(Platform((0, 550), (800, 50),self.game))  # Ground platform
+        self.platform_group.add(Platform((0, 850), (1500, 50),self.game))  # Ground platform
         self.setup_level()
-        self.wg = WarpGate(Point2(500,100),game)
+        
 
     def setup_level(self):
         """Set up platforms and objects specific to this level and sublevel."""
@@ -166,6 +169,7 @@ class Level:
                 lt = LevelToolkit(self)
                 sandbox.execute(f.read())(lt)
         else:
+            self.wg = WarpGate(Point2(500,100),self.game)
             if self.level_number == 1:
                 if self.sublevel_number == 1:
                     self.platform_group.add(Platform((100, 500), (100, 20),self.game))
@@ -226,3 +230,5 @@ class LevelToolkit:
         return Point2(x,y)
     def Platform(self, pos, size):
         self.level.platform_group.add(Platform(pos.xy,size.xy,self.level.game))
+    def exit(self,pos):
+        self.level.wg = WarpGate(pos,self.level.game)

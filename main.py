@@ -3,13 +3,11 @@ import sys
 from pygame_light2d import LightingEngine, PointLight
 import levels
 import pygame_light2d as pl2d
-from game import Game
+from game import Game,screen_res
 
 # Initialize
 pygame.init()
 
-screen_res = (800, 600)
-native_res = (800, 600)
 
 screen = pygame.display.set_mode(screen_res, pygame.DOUBLEBUF | pygame.OPENGL)
 clock = pygame.time.Clock()

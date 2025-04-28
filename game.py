@@ -1,8 +1,8 @@
 import luma,levels
 from pygame_light2d import LightingEngine
 
-screen_res = (800, 600)
-native_res = (800, 600)
+screen_res = (1500, 900)
+native_res = (1500, 900)
 
 class Game:
     def __init__(self):
