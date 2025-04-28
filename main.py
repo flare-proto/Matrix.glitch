@@ -13,7 +13,7 @@ native_res = (800, 600)
 
 screen = pygame.display.set_mode(screen_res, pygame.DOUBLEBUF | pygame.OPENGL)
 clock = pygame.time.Clock()
-game = Game()
+game = Game(screen)
 
 
 # Game loop
@@ -27,6 +27,7 @@ while running:
     game.final_layer.clear(0, 0, 0)
 
     keys = pygame.key.get_pressed()
+    game.level_manager.draw(screen)
     game.level_manager.level.player.update(keys, game.level_manager.level.platform_group)
 
     # Call the on_frame function for custom per-frame logic
@@ -40,7 +41,7 @@ while running:
             if event.key == pygame.K_SPACE:
                 game.level_manager.level.player.jump()
 
-    game.level_manager.draw(screen)
+    
     tex = game.lights_engine.surface_to_texture(screen)
     game.lights_engine.render_texture(
         tex, pl2d.BACKGROUND,

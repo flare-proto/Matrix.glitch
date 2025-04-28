@@ -1,3 +1,4 @@
+import pygame
 import luma,levels
 from pygame_light2d import LightingEngine
 
@@ -5,7 +6,7 @@ screen_res = (800, 600)
 native_res = (800, 600)
 
 class Game:
-    def __init__(self):
+    def __init__(self,screen):
         self.lights_engine = LightingEngine(
             screen_res=screen_res, native_res=native_res, lightmap_res=native_res
         )
@@ -21,3 +22,4 @@ class Game:
         self.hulls = luma.group()
         
         self.level_manager =levels.LevelManager(self)
+        self.screen:pygame.Surface = screen

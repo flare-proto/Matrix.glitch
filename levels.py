@@ -28,6 +28,7 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.Surface((40, 60))
         self.image.fill(BLUE)
         self.rect = self.image.get_frect(topleft=pos)
+        self.vel = pygame.math.Vector2(0,0)
         self.vel_y = 0
         self.vel_x = 0
         self.on_ground = False
@@ -36,7 +37,6 @@ class Player(pygame.sprite.Sprite):
         
         self.lamp = luma.light(game.lights_engine,(0,0),1,300)
         self.lamp.set_color(255,255,255,255)
-        
         
         self.jumps_left = 1
         self.jumps = 1
@@ -57,6 +57,7 @@ class Player(pygame.sprite.Sprite):
     def cooldown(self, dt):
         if self.jumpCooldown > 0:
             self.jumpCooldown -= dt
+    
 
     def update(self, keys, platform_group,):
         # Horizontal Movement
@@ -66,6 +67,10 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_RIGHT]:
             self.vel_x = PLAYER_SPEED
 
+        grav = self.game.level_manager.level.grav(Point2(self.rect.x,self.rect.y))
+        
+        self.vel.x = self.vel_x
+        
         # Apply horizontal movement
         self.rect.x += self.vel_x
 
@@ -80,8 +85,27 @@ class Player(pygame.sprite.Sprite):
 
         # Gravity
         self.vel_y += GRAVITY
-        self.rect.y += self.vel_y
+        #self.rect.y += self.vel_y
+        
+        r,phi = grav.as_polar()
+        r2,phi2 = self.vel.as_polar()
+        phiR = phi
+        phiR -= 180
+        phiR += phi2
+        
+        mvel = pygame.Vector2(0,0)
+        mvel.from_polar((r2,phiR))
+        gvel = pygame.Vector2(0,0)
+        gvel.from_polar((r,phi))
+        
+        self.fvel = mvel+gvel
 
+        self.rect.y += self.fvel.y
+        self.vel_y += self.fvel.y
+        self.rect.x += self.fvel.x
+        
+        pygame.draw.line(self.game.screen,(255,255,255),self.rect.center,pygame.Vector2(self.rect.center)+gvel*5)
+        
         # Vertical collision with platforms (falling down)
         self.on_ground = False  # Reset on_ground flag
         for platform in platform_group:
@@ -146,8 +170,6 @@ class Level:
     def __init__(self, level_number, sublevel_number,game:Game):
         self.game = game
         
-        
-        
         self.level_number = level_number
         self.sublevel_number = sublevel_number
         self.platform_group = pygame.sprite.Group()
@@ -195,6 +217,8 @@ class Level:
         self.game.hulls.kill()
         self.player.lamp.kill()
         self.wg.kill()
+    def grav(self,pos):
+        return pygame.Vector2(0,9.81)
 class LevelManager:
     def __init__(self,game:Game):
         self.current_level = 1
@@ -226,3 +250,11 @@ class LevelToolkit:
         return Point2(x,y)
     def Platform(self, pos, size):
         self.level.platform_group.add(Platform(pos.xy,size.xy,self.level.game))
+    def Gravity(self,center,strength):
+        def grav(pos):
+            posv = pygame.Vector2(pos.xy)
+            gravity_center = pygame.math.Vector2(center.xy)
+            gravity_direction = (gravity_center - posv).normalize()
+            gravity_force = gravity_direction * strength
+            return gravity_force
+        self.level.grav = grav
