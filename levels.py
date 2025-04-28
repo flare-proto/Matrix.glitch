@@ -39,7 +39,7 @@ class Player(pygame.sprite.Sprite):
         
         
         self.jumps_left = 1
-        self.jumps = 2
+        self.jumps = 1
         self.jumpCooldown = 0
 
     def jump(self):
@@ -156,13 +156,16 @@ class Level:
         self.platform_group = pygame.sprite.Group()
         self.player_group = pygame.sprite.GroupSingle()
         self.player = Player((100, 400),self.game)
-        self.player_group.add(self.player)
-        self.platform_group.add(Platform((0, 850), (1500, 50),self.game))  # Ground platform
+        
         self.setup_level()
         
 
     def setup_level(self):
         """Set up platforms and objects specific to this level and sublevel."""
+        
+        self.player_group.add(self.player)
+        self.platform_group.add(Platform((0, 850), (1500, 50),self.game))  # Ground platform
+        
         pth = os.path.join("levels",f"l{self.level_number}_{self.sublevel_number}.lua")
         if os.path.exists(pth):
             with open(pth,"r") as f:
@@ -190,6 +193,8 @@ class Level:
         """Define actions or events that happen every frame for this level."""
         if self.level_number == 2 and self.sublevel_number == 2:
             player.vel_y += GRAVITY * 0.5  # Change gravity for a specific level
+        if self.player.rect.y >= 900:
+            self.reset()
         self.game.lights.update(dt)
         self.wg.update(dt)
     def draw(self,scr):
@@ -199,6 +204,14 @@ class Level:
         self.game.hulls.kill()
         self.player.lamp.kill()
         self.wg.kill()
+    def reset(self):
+        self.game.hulls.kill()
+        self.wg.kill()
+        self.platform_group.empty()
+        self.setup_level()
+        self.player.vel_x = 0
+        self.player.vel_y = 0
+        
 class LevelManager:
     def __init__(self,game:Game):
         self.current_level = 1
@@ -232,3 +245,5 @@ class LevelToolkit:
         self.level.platform_group.add(Platform(pos.xy,size.xy,self.level.game))
     def exit(self,pos):
         self.level.wg = WarpGate(pos,self.level.game)
+    def player(self,pos):
+        self.level.player.rect.center = pos.xy
