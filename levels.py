@@ -19,7 +19,7 @@ sandbox.globals()["debug"] = None  # Block debugging functions
 GREEN = (50, 255, 50)
 BLUE = (50, 50, 255)
 GRAVITY = 0.5
-JUMP_STRENGTH = 10
+JUMP_STRENGTH = 12
 PLAYER_SPEED=5
 
 class Player(pygame.sprite.Sprite):
@@ -130,11 +130,11 @@ class WarpGate(luma.member):
         self.rect = pygame.Rect(0,0,50,130)
         self.rect.center = self.pos.xy
         
-        self._makeLight(Point2(0,-40),pygame.Color(230, 107, 147))
-        self._makeLight(Point2(0,-20),pygame.Color(255,255,255))
+        self._makeLight(Point2(0,-50),pygame.Color(230, 107, 147))
+        self._makeLight(Point2(0,-25),pygame.Color(255,255,255))
         self._makeLight(Point2(0,0),pygame.Color(205, 83, 221))
-        self._makeLight(Point2(0,20),pygame.Color(166, 166, 166))
-        self._makeLight(Point2(0,40),pygame.Color(112, 122, 219))
+        self._makeLight(Point2(0,25),pygame.Color(166, 166, 166))
+        self._makeLight(Point2(0,50),pygame.Color(112, 122, 219))
         
     def _makeLight(self,offset:Point2,col:pygame.Color):
         l = luma.light(self.game.lights_engine,(
@@ -148,6 +148,34 @@ class WarpGate(luma.member):
     def kill(self):
         super().kill()
         self.lights.kill()
+        
+class magma(luma.member):
+    def __init__(self,pos:Point2,sz:Point2,game: Game):
+        super().__init__()
+        self.pos =  pos
+        self.sz = sz
+        self.game = game
+        self.lights = luma.group()
+        self.rect = pygame.Rect(0,0,50,130)
+        self.rect.center = self.pos.xy
+        
+        for i in range(0,self.sz.x,25):
+            self._makeLight(Point2(i,0),pygame.Color(255, 150, 0))
+        
+        
+    def _makeLight(self,offset:Point2,col:pygame.Color):
+        l = luma.light(self.game.lights_engine,(
+            (self.pos+offset).xy
+        ),1,50)
+        l.set_color(col.r,col.g,col.b,col.a)
+        l.join(self.lights)
+    def update(self, dt):
+        if self.game.level_manager.level.player.rect.colliderect(self.rect):
+            self.game.level_manager.advance_level()
+    def kill(self):
+        super().kill()
+        self.lights.kill()
+    
 class Level:
     def __init__(self, level_number, sublevel_number,game:Game):
         self.game = game
@@ -165,16 +193,16 @@ class Level:
 
     def setup_level(self):
         """Set up platforms and objects specific to this level and sublevel."""
-        
         self.player_group.add(self.player)
-        self.platform_group.add(Platform((0, 850), (1500, 50),self.game))  # Ground platform
-        
         pth = os.path.join("levels",f"l{self.level_number}_{self.sublevel_number}.lua")
         if os.path.exists(pth):
             with open(pth,"r") as f:
                 lt = LevelToolkit(self)
                 sandbox.execute(f.read())(lt)
         else:
+            
+            self.platform_group.add(Platform((0, 850), (1500, 50),self.game))  # Ground platform
+            
             self.wg = WarpGate(Point2(500,100),self.game)
             if self.level_number == 1:
                 if self.sublevel_number == 1:
@@ -246,6 +274,8 @@ class LevelToolkit:
         return Point2(x,y)
     def Platform(self, pos, size):
         self.level.platform_group.add(Platform(pos.xy,size.xy,self.level.game))
+    def magma(self, pos, size):
+        magma(pos,size,self.level.game).join(self.level.game.lights)
     def exit(self,pos):
         self.level.wg = WarpGate(pos,self.level.game)
     def player(self,pos):

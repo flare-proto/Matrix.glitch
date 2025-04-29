@@ -5,4 +5,5 @@ return function(level)
     level:Platform(level:Point2(200,550),psz)
     level:exit(level:Point2(500,300))
     level:player(level:Point2(100, 400))
+    level:magma(level:Point2(0, 905),level:Point2(1500, 1))
 end
